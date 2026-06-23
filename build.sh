@@ -19,3 +19,9 @@ cd ../backend
 CGO_ENABLED=1 go build -o sharelan .
 
 echo "✅ 构建完成: backend/sharelan"
+
+# 4. macOS 打包
+if [ "$(uname)" = "Darwin" ]; then
+  echo "📦 打包 macOS .app..."
+  bash ../scripts/package-macos-app.sh
+fi

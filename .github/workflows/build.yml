@@ -20,11 +20,20 @@ jobs:
       - run: |
           cd frontend && npm install && npm run build
           cd ../backend && cp -r ../frontend/dist dist
-          CGO_ENABLED=1 go build -o sharelan-macos-amd64 .
+          CGO_ENABLED=1 go build -o sharelan-macos-x86_64 .
+          # 创建 .app 包
+          mkdir -p ../ShareLan.app/Contents/MacOS
+          cp sharelan-macos-x86_64 ../ShareLan.app/Contents/MacOS/sharelan
+          chmod +x ../ShareLan.app/Contents/MacOS/sharelan
+          printf '<?xml version="1.0" encoding="UTF-8"?>\n<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">\n<plist version="1.0">\n<dict>\n<key>CFBundleExecutable</key>\n<string>sharelan</string>\n<key>CFBundleIdentifier</key>\n<string>com.sharelan.app</string>\n<key>CFBundleName</key>\n<string>ShareLan</string>\n<key>CFBundleVersion</key>\n<string>0.1.0</string>\n<key>CFBundlePackageType</key>\n<string>APPL</string>\n<key>LSMinimumSystemVersion</key>\n<string>10.15</string>\n</dict>\n</plist>\n' > ../ShareLan.app/Contents/Info.plist
       - uses: actions/upload-artifact@v4
         with:
-          name: sharelan-macos
-          path: backend/sharelan-macos-amd64
+          name: sharelan-macos-binary
+          path: backend/sharelan-macos-x86_64
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ShareLan.app
+          path: ShareLan.app
 
   build-windows:
     runs-on: windows-latest

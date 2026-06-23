@@ -1,11 +1,14 @@
-# Go
-backend/tmp/
+# Go binaries
 backend/sharelan
+backend/sharelan-*
 
-# Frontend build
+# Frontend
 frontend/node_modules/
 frontend/dist/
 backend/dist/
+
+# macOS .app
+ShareLan.app/
 
 # OS
 .DS_Store
