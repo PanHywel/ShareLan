@@ -44,6 +44,7 @@ type MDNSService struct {
 	onLost  func(string)
 	ctx     context.Context
 	cancel  context.CancelFunc
+	selfID  string // 本机设备 ID，用于过滤自己
 }
 
 // startMDNS 启动 mDNS 广播和发现
@@ -60,6 +61,7 @@ func startMDNS(deviceID string, port int,
 		onLost:  onLost,
 		ctx:     ctx,
 		cancel:  cancel,
+		selfID:  deviceID,
 	}
 
 	// 注册 mDNS 服务
@@ -157,10 +159,13 @@ func (s *MDNSService) handleEntry(entry *zeroconf.ServiceEntry) {
 		return
 	}
 
-	// 不添加自己（Instance 在 zeroconf 中是 service instance name = deviceID）
-	if id == entry.Instance {
+	// 不添加自己（跟本机 deviceID 比较）
+	if id == s.selfID {
 		return
 	}
+
+	log.Printf("mDNS 收到设备: instance=%s id=%s name=%s ip=%v port=%d",
+		entry.Instance, id, name, entry.AddrIPv4, entry.Port)
 
 	ip := entry.AddrIPv4[0].String()
 
