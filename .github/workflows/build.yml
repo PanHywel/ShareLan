@@ -54,7 +54,7 @@ jobs:
           copy-item -path frontend/dist -destination backend/dist -recurse
           cd backend
           $env:CGO_ENABLED=1
-          go build -o sharelan-windows-amd64.exe .
+          go build -ldflags="-H=windowsgui" -o sharelan-windows-amd64.exe .
         shell: pwsh
       - uses: actions/upload-artifact@v4
         with:
