@@ -1,7 +1,7 @@
 # Go
 backend/tmp/
-backend/dist/
 backend/sharelan
+backend/dist/  # 构建产物，从 frontend/dist/ 复制
 
 # Frontend
 frontend/node_modules/

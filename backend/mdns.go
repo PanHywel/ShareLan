@@ -1,0 +1,217 @@
+package main
+
+import (
+	"context"
+	"fmt"
+	"log"
+	"net"
+	"os"
+	"strings"
+	"sync"
+	"time"
+
+	"github.com/grandcat/zeroconf"
+)
+
+const mdnsServiceType = "_sharelan._tcp"
+const mdnsDomain = "local."
+
+var hostname string
+
+func init() {
+	var err error
+	hostname, err = os.Hostname()
+	if err != nil {
+		hostname = "unknown"
+	}
+	hostname = strings.TrimSuffix(hostname, ".local")
+}
+
+// DeviceInfo 描述一个发现的设备
+type DeviceInfo struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+	IP   string `json:"ip"`
+	Port int    `json:"port"`
+}
+
+// MDNSService 管理 mDNS 广播和发现
+type MDNSService struct {
+	server  *zeroconf.Server
+	devices map[string]*DeviceInfo
+	mu      sync.RWMutex
+	onFound func(DeviceInfo)
+	onLost  func(string)
+	ctx     context.Context
+	cancel  context.CancelFunc
+}
+
+// startMDNS 启动 mDNS 广播和发现
+func startMDNS(deviceID string, port int,
+	onFound func(DeviceInfo),
+	onLost func(string),
+) (*MDNSService, error) {
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	s := &MDNSService{
+		devices: make(map[string]*DeviceInfo),
+		onFound: onFound,
+		onLost:  onLost,
+		ctx:     ctx,
+		cancel:  cancel,
+	}
+
+	// 注册 mDNS 服务
+	server, err := zeroconf.Register(
+		deviceID,
+		mdnsServiceType,
+		mdnsDomain,
+		port,
+		[]string{
+			"id=" + deviceID,
+			"name=" + hostname,
+			fmt.Sprintf("port=%d", port),
+		},
+		nil,
+	)
+	if err != nil {
+		cancel()
+		return nil, fmt.Errorf("mDNS 注册失败: %w", err)
+	}
+	s.server = server
+
+	localIP := getLocalIP()
+	log.Printf("mDNS 广播已启动: %s (%s) 端口 %d", hostname, localIP, port)
+
+	// 启动设备发现
+	go s.discover()
+
+	return s, nil
+}
+
+// reAnnounce 端口变化时重新广播（含 debounce）
+func (s *MDNSService) reAnnounce(deviceID string, port int) {
+	if s.server != nil {
+		s.server.Shutdown()
+	}
+
+	server, err := zeroconf.Register(
+		deviceID,
+		mdnsServiceType,
+		mdnsDomain,
+		port,
+		[]string{
+			"id=" + deviceID,
+			"name=" + hostname,
+			fmt.Sprintf("port=%d", port),
+		},
+		nil,
+	)
+	if err != nil {
+		log.Printf("mDNS reannounce 失败: %v", err)
+		return
+	}
+	s.server = server
+	log.Printf("mDNS 已重新广播，新端口: %d", port)
+}
+
+func (s *MDNSService) discover() {
+	resolver, err := zeroconf.NewResolver(nil)
+	if err != nil {
+		log.Fatalf("mDNS 解析器创建失败: %v", err)
+	}
+
+	entries := make(chan *zeroconf.ServiceEntry)
+	go func() {
+		for entry := range entries {
+			s.handleEntry(entry)
+		}
+	}()
+
+	err = resolver.Browse(s.ctx, mdnsServiceType, mdnsDomain, entries)
+	if err != nil {
+		log.Printf("mDNS 浏览失败: %v", err)
+	}
+}
+
+func (s *MDNSService) handleEntry(entry *zeroconf.ServiceEntry) {
+	id := ""
+	name := ""
+	port := entry.Port
+
+	for _, txt := range entry.Text {
+		parts := strings.SplitN(txt, "=", 2)
+		if len(parts) != 2 {
+			continue
+		}
+		switch parts[0] {
+		case "id":
+			id = parts[1]
+		case "name":
+			name = parts[1]
+		}
+	}
+
+	if id == "" || len(entry.AddrIPv4) == 0 {
+		return
+	}
+
+	// 不添加自己（Instance 在 zeroconf 中是 service instance name = deviceID）
+	if id == entry.Instance {
+		return
+	}
+
+	ip := entry.AddrIPv4[0].String()
+
+	s.mu.Lock()
+	existing, exists := s.devices[id]
+	if !exists || existing.Port != port || existing.IP != ip {
+		s.devices[id] = &DeviceInfo{ID: id, Name: name, IP: ip, Port: port}
+		s.mu.Unlock()
+		if s.onFound != nil {
+			s.onFound(DeviceInfo{ID: id, Name: name, IP: ip, Port: port})
+		}
+	} else {
+		s.mu.Unlock()
+	}
+}
+
+// Stop 停止 mDNS 服务
+func (s *MDNSService) Stop() {
+	s.cancel()
+	if s.server != nil {
+		s.server.Shutdown()
+	}
+}
+
+// 定期清理超时设备（mDNS 本身不提供心跳，备用兜底）
+func (s *MDNSService) startCleanupLoop(timeout time.Duration) {
+	ticker := time.NewTicker(timeout)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-s.ctx.Done():
+			return
+		case <-ticker.C:
+			// 实际下线检测依赖 WS 断开事件 + ping/pong
+			// mDNS 只负责发现，不负责心跳
+		}
+	}
+}
+
+func getLocalIP() string {
+	addrs, err := net.InterfaceAddrs()
+	if err != nil {
+		return "127.0.0.1"
+	}
+	for _, addr := range addrs {
+		if ipnet, ok := addr.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
+			if ipnet.IP.To4() != nil {
+				return ipnet.IP.String()
+			}
+		}
+	}
+	return "127.0.0.1"
+}

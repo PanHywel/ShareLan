@@ -1,0 +1,36 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git -C /Users/hywel/workspaces/ShareLan status)",
+      "Bash(git init *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(go mod *)",
+      "Bash(go get *)",
+      "Bash(GOPROXY=https://proxy.golang.org,direct go get modernc.org/sqlite)",
+      "Bash(go env *)",
+      "Bash(echo \"GOPROXY=$\\(go env GOPROXY\\)\")",
+      "Bash(echo \"GOMODCACHE=$\\(go env GOMODCACHE\\)\")",
+      "Bash(echo \"GOPATH=$\\(go env GOPATH\\)\")",
+      "Bash(sqlite3 --version)",
+      "Read(//usr/lib/**)",
+      "Read(//opt/homebrew/opt/sqlite/**)",
+      "Read(//usr/local/Cellar/sqlite/3.34.0/lib/**)",
+      "Bash(xcrun --show-sdk-path)",
+      "Read(//Library/Developer/CommandLineTools/SDKs/MacOSX14.4.sdk/usr/include/**)",
+      "Bash(ping -c 1 -t 5 google.com)",
+      "Bash(ping -c 1 -t 5 github.com)",
+      "Bash(go version *)",
+      "Read(//usr/local/go/bin/**)",
+      "Bash(/usr/local/go/bin/go version *)",
+      "Read(//opt/homebrew/bin/**)",
+      "Bash(/opt/homebrew/bin/go version *)",
+      "Read(//usr/local/bin/**)",
+      "Bash(ln -s /usr/local/go/bin/go /usr/local/bin/go)",
+      "Bash(/usr/local/bin/go version *)",
+      "Bash(go build *)",
+      "Bash(ln -s ../frontend frontend)",
+      "Bash(go clean *)"
+    ]
+  }
+}
