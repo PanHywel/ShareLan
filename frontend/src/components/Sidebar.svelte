@@ -3,14 +3,20 @@
   import { activeDeviceId } from '../stores/activeChat';
   import DeviceItem from './DeviceItem.svelte';
 
-  let { onSelect }: { onSelect: (id: string) => void } = $props();
+  let { onSelect, localIP = '' }: { onSelect: (id: string) => void; localIP?: string } = $props();
 </script>
 
 <div class="h-full flex flex-col bg-gray-50">
   <!-- 标题 -->
   <div class="p-3 border-b border-gray-200">
     <h1 class="text-base font-semibold text-gray-800">ShareLan</h1>
-    <p class="text-xs text-gray-400 mt-0.5">局域网通讯工具</p>
+    <p class="text-xs text-gray-400 mt-0.5">
+      {#if localIP}
+        {localIP}
+      {:else}
+        局域网通讯工具
+      {/if}
+    </p>
   </div>
 
   <!-- 设备列表 -->

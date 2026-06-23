@@ -105,6 +105,8 @@ func (h *Hub) ServeWS(w http.ResponseWriter, r *http.Request) {
 		h.localConn = conn
 		h.localConnMu.Unlock()
 		log.Printf("前端 WebSocket 已连接 (设备: %s)", msg.From)
+		// 推送服务信息（本机 IP）
+		go h.pushServerInfo(conn)
 		// 推历史消息
 		go h.pushHistory(conn, msg.From)
 		go h.handleLocalConnection(conn)
@@ -145,6 +147,20 @@ func (h *Hub) handleLocalConnection(conn *websocket.Conn) {
 	}
 }
 
+
+// pushServerInfo 推送本机服务信息到前端
+func (h *Hub) pushServerInfo(conn *websocket.Conn) {
+	localIP := getLocalIP()
+	msg := WSMessage{
+		ID:        newUUID(),
+		Type:      "server_info",
+		Content:   localIP,
+		Timestamp: time.Now().UnixMilli(),
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	wsjson.Write(ctx, conn, &msg)
+}
 // pushHistory 向前端推送历史消息（MVP 简化：按 conversation_id 查询并推送）
 func (h *Hub) pushHistory(conn *websocket.Conn, myDeviceID string) {
 	log.Printf("历史消息推送待实现（按 conversation_id 查询）")

@@ -10,7 +10,7 @@ export interface Device {
 /** 消息结构（与 Go 后端 WSMessage 一致） */
 export interface Message {
   id: string;
-  type: 'text' | 'hello' | 'handshake' | 'device_online' | 'device_offline';
+  type: 'text' | 'hello' | 'handshake' | 'device_online' | 'device_offline' | 'server_info';
   from: string;
   to: string;
   content: string;

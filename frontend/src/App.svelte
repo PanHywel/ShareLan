@@ -13,6 +13,7 @@
   let connected = $state(false);
   let myDeviceId = $state(getDeviceId());
   let myDeviceName = $state(getDeviceName());
+  let localIP = $state('');
 
   onMount(() => {
     const port = window.location.port || '17888';
@@ -35,6 +36,9 @@
     switch (msg.type) {
       case 'text':
         addMessage(msg);
+        break;
+      case 'server_info':
+        localIP = msg.content;
         break;
       case 'device_online':
         handleDeviceOnline(msg);
@@ -89,7 +93,7 @@
 <div class="flex h-screen bg-white">
   <!-- 侧边栏 -->
   <div class="w-60 flex-shrink-0 border-r border-gray-200">
-    <Sidebar onSelect={handleDeviceSelect} />
+    <Sidebar onSelect={handleDeviceSelect} {localIP} />
   </div>
   <!-- 聊天区域 -->
   <div class="flex-1 flex flex-col">
