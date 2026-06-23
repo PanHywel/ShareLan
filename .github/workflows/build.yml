@@ -55,8 +55,13 @@ jobs:
           cd backend
           $env:CGO_ENABLED=1
           go build -ldflags="-H=windowsgui" -o sharelan-windows-amd64.exe .
+          go build -o sharelan-windows-amd64-debug.exe .
         shell: pwsh
       - uses: actions/upload-artifact@v4
         with:
           name: sharelan-windows
           path: backend/sharelan-windows-amd64.exe
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sharelan-windows-debug
+          path: backend/sharelan-windows-amd64-debug.exe
