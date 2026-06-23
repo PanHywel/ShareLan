@@ -43,14 +43,14 @@ func startHTTPServer(port int, hub *Hub) *http.Server {
 		w.Write(index)
 	}))
 
-	addr := fmt.Sprintf("127.0.0.1:%d", port)
+	addr := fmt.Sprintf(":%d", port)
 	server := &http.Server{
 		Addr:    addr,
 		Handler: mux,
 	}
 
 	go func() {
-		log.Printf("HTTP 服务已启动: http://%s", addr)
+		log.Printf("HTTP 服务已启动: http://0.0.0.0:%d", port)
 		if err := server.ListenAndServe(); err != http.ErrServerClosed {
 			log.Fatalf("HTTP 服务异常: %v", err)
 		}
