@@ -167,7 +167,10 @@ func (s *MDNSService) handleEntry(entry *zeroconf.ServiceEntry) {
 	log.Printf("mDNS 收到设备: instance=%s id=%s name=%s ip=%v port=%d",
 		entry.Instance, id, name, entry.AddrIPv4, entry.Port)
 
-	ip := entry.AddrIPv4[0].String()
+	ip := pickLANIP(entry.AddrIPv4)
+	if ip == "" {
+		return // 没有找到有效的局域网 IP
+	}
 
 	s.mu.Lock()
 	existing, exists := s.devices[id]
@@ -204,6 +207,36 @@ func (s *MDNSService) startCleanupLoop(timeout time.Duration) {
 			// mDNS 只负责发现，不负责心跳
 		}
 	}
+}
+
+// pickLANIP 从多个 IP 中选取最合适的局域网 IP
+// 优先顺序：192.168.x.x > 10.x.x.x > 172.16-31.x.x > 其他私有 IP
+func pickLANIP(ips []net.IP) string {
+	// 先看有没有 192.168.x.x
+	for _, ip := range ips {
+		if ip.To4() != nil && ip[0] == 192 && ip[1] == 168 {
+			return ip.String()
+		}
+	}
+	// 再看 10.x.x.x
+	for _, ip := range ips {
+		if ip.To4() != nil && ip[0] == 10 {
+			return ip.String()
+		}
+	}
+	// 再看 172.16-31.x.x
+	for _, ip := range ips {
+		if ip.To4() != nil && ip[0] == 172 && ip[1] >= 16 && ip[1] <= 31 {
+			return ip.String()
+		}
+	}
+	// 最后取第一个非回环 IPv4
+	for _, ip := range ips {
+		if ip.To4() != nil && !ip.IsLoopback() {
+			return ip.String()
+		}
+	}
+	return ""
 }
 
 func getLocalIP() string {
