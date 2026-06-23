@@ -1,11 +1,11 @@
 # Go
 backend/tmp/
 backend/sharelan
-backend/dist/  # 构建产物，从 frontend/dist/ 复制
 
-# Frontend
+# Frontend build
 frontend/node_modules/
 frontend/dist/
+backend/dist/
 
 # OS
 .DS_Store
