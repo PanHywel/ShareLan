@@ -454,7 +454,8 @@ func (h *Hub) startHandshake(deviceID string, conn *websocket.Conn, initiator bo
 	}
 }
 
-// handleHandshake 处理收到的 handshake
+// handleHandshake 处理收到的 handshake（接收方）
+// 接收方永远不关闭连接，关闭决定仅由发起方在 startHandshake 中做出
 func (h *Hub) handleHandshake(fromDevice string, msg *WSMessage) {
 	pc := h.getPeerConn(fromDevice)
 	if pc == nil {
@@ -468,14 +469,9 @@ func (h *Hub) handleHandshake(fromDevice string, msg *WSMessage) {
 		return
 	}
 
-	if h.deviceID < msg.From {
-		pc.state = stateReady
-		log.Printf("与 %s (%s) 的 WebSocket 连接已就绪 (handshake 确认)", fromDevice, msg.Content)
-	} else {
-		log.Printf("device_id %s > %s，由对端保留连接", h.deviceID, msg.From)
-		pc.conn.Close(websocket.StatusNormalClosure, "对端保留连接")
-		pc.state = stateConnecting
-	}
+	// 接收方总是标记为 ready，让发起方负责去重
+	pc.state = stateReady
+	log.Printf("与 %s (%s) 的 WebSocket 连接已就绪 (接收方)", fromDevice, msg.Content)
 }
 
 // ─── 读取循环 ──────────────────────────────────────────────

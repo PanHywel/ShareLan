@@ -244,12 +244,20 @@ func getLocalIP() string {
 	if err != nil {
 		return "127.0.0.1"
 	}
+	var ips []net.IP
 	for _, addr := range addrs {
 		if ipnet, ok := addr.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
 			if ipnet.IP.To4() != nil {
-				return ipnet.IP.String()
+				ips = append(ips, ipnet.IP)
 			}
 		}
+	}
+	// 复用 pickLANIP 优先选局域网 IP
+	if ip := pickLANIP(ips); ip != "" {
+		return ip
+	}
+	if len(ips) > 0 {
+		return ips[0].String()
 	}
 	return "127.0.0.1"
 }
