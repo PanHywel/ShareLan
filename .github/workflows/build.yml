@@ -20,7 +20,7 @@ jobs:
       - run: |
           cd frontend && npm install && npm run build
           cd ../backend && cp -r ../frontend/dist dist
-          CGO_ENABLED=1 go build -o sharelan-macos-x86_64 .
+          CGO_ENABLED=1 GOARCH=amd64 go build -o sharelan-macos-x86_64 .
           # 创建 .app 包
           mkdir -p ../ShareLan.app/Contents/MacOS
           cp sharelan-macos-x86_64 ../ShareLan.app/Contents/MacOS/sharelan

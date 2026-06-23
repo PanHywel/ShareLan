@@ -18,6 +18,9 @@ echo "⚙️  编译 Go 后端..."
 cd ../backend
 CGO_ENABLED=1 go build -o sharelan .
 
+# 同时编译 arm64 版本（Apple Silicon 兼容）
+CGO_ENABLED=1 GOARCH=arm64 go build -o sharelan-darwin-arm64 . || true
+
 echo "✅ 构建完成: backend/sharelan"
 
 # 4. macOS 打包
