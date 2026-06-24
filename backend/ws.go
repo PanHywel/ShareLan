@@ -147,6 +147,7 @@ func (h *Hub) handleLocalConnection(conn *websocket.Conn) {
 			return
 		}
 
+		log.Printf("收到前端消息: type=%s content=%s", msg.Type, msg.Content)
 		switch msg.Type {
 		case "text":
 			h.handleMessage(&msg)
