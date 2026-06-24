@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"strings"
 	"fmt"
 	"log"
 	"net/http"
@@ -269,6 +270,8 @@ func (h *Hub) handleMessage(msg *WSMessage) {
 	if msg.Timestamp == 0 {
 		msg.Timestamp = time.Now().UnixMilli()
 	}
+	log.Printf("处理消息: id=%s type=%s from=%s to=%s content=%s",
+		msg.ID[:8], msg.Type, msg.From[:8], msg.To[:8], msg.Content)
 
 	cid := conversationID(msg.From, msg.To)
 
@@ -366,9 +369,27 @@ func (h *Hub) connectWithRetry(deviceID, ip string, port int) {
 	delay := initialRetry
 
 	for {
+		// 如果已有就绪的连接，不再重试
+		h.peersMu.RLock()
+		existing := h.peers[deviceID]
+		h.peersMu.RUnlock()
+		if existing != nil {
+			existing.mu.Lock()
+			if existing.state == stateReady {
+				existing.mu.Unlock()
+				return
+			}
+			existing.mu.Unlock()
+		}
+
 		conn, err := h.tryConnect(deviceID, ip, port)
 		if err == nil {
 			h.startHandshake(deviceID, conn, true)
+			return
+		}
+
+		// 如果是"已有更高状态连接"，不再重试
+		if strings.Contains(err.Error(), "已有更高状态") {
 			return
 		}
 
