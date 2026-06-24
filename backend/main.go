@@ -37,8 +37,15 @@ func loadOrGenerateDeviceID() string {
 	return cfg.DeviceID
 }
 
+// logBuffer 全局日志缓冲区（临时调试用）
+var logBuffer *LogBuffer
+
 func main() {
 	log.SetFlags(log.Ltime | log.Lshortfile)
+
+	// 全局日志缓冲，最后 500KB，同时写入 stderr
+	logBuffer = NewLogBuffer(500*1024, os.Stderr)
+	log.SetOutput(logBuffer)
 
 	// 1. 加载设备 ID
 	deviceID := loadOrGenerateDeviceID()

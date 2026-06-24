@@ -3,6 +3,7 @@ package main
 import (
 	"embed"
 	"fmt"
+	"io"
 	"io/fs"
 	"log"
 	"net"
@@ -24,6 +25,17 @@ func startHTTPServer(port int, hub *Hub) *http.Server {
 
 	// WebSocket 路由
 	mux.HandleFunc("/ws", hub.ServeWS)
+
+	// 调试日志接口（临时启用，用于排查连接问题）
+	mux.HandleFunc("/debug/logs", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		if logBuffer != nil {
+			w.Write(logBuffer.Recent())
+		} else {
+			io.WriteString(w, "log buffer not initialized")
+		}
+	})
 
 	// 静态文件 + SPA fallback
 	fileServer := http.FileServer(http.FS(distFS))
