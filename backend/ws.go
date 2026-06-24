@@ -51,6 +51,10 @@ type Hub struct {
 	// 本机前端连接（只保留一个）
 	localConn   *websocket.Conn
 	localConnMu sync.Mutex
+
+	// 设备信息缓存
+	deviceInfos   map[string]DeviceInfo
+	deviceInfosMu sync.RWMutex
 }
 
 // WSMessage 统一消息结构
@@ -65,11 +69,12 @@ type WSMessage struct {
 
 func newHub(db *sql.DB, deviceID, deviceName string, localPort int) *Hub {
 	return &Hub{
-		db:         db,
-		deviceID:   deviceID,
-		deviceName: deviceName,
-		localPort:  localPort,
-		peers:      make(map[string]*peerConn),
+		db:          db,
+		deviceID:    deviceID,
+		deviceName:  deviceName,
+		localPort:   localPort,
+		peers:       make(map[string]*peerConn),
+		deviceInfos: make(map[string]DeviceInfo),
 	}
 }
 
@@ -148,7 +153,7 @@ func (h *Hub) handleLocalConnection(conn *websocket.Conn) {
 }
 
 
-// pushServerInfo 推送本机服务信息到前端
+// pushServerInfo 推送本机服务信息 + 所有缓存的在线设备到前端
 func (h *Hub) pushServerInfo(conn *websocket.Conn) {
 	localIP := getLocalIP()
 	msg := WSMessage{
@@ -160,6 +165,26 @@ func (h *Hub) pushServerInfo(conn *websocket.Conn) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 	wsjson.Write(ctx, conn, &msg)
+
+	// 推送所有缓存的设备（解决前端连接晚于 mDNS 发现的丢失问题）
+	h.deviceInfosMu.RLock()
+	defer h.deviceInfosMu.RUnlock()
+	for _, di := range h.deviceInfos {
+		devInfo := map[string]interface{}{
+			"name": di.Name,
+			"ip":   di.IP,
+			"port": di.Port,
+		}
+		devJSON, _ := json.Marshal(devInfo)
+		devMsg := WSMessage{
+			ID:        newUUID(),
+			Type:      "device_online",
+			From:      di.ID,
+			Content:   string(devJSON),
+			Timestamp: time.Now().UnixMilli(),
+		}
+		wsjson.Write(ctx, conn, &devMsg)
+	}
 }
 // pushHistory 向前端推送历史消息（MVP 简化：按 conversation_id 查询并推送）
 func (h *Hub) pushHistory(conn *websocket.Conn, myDeviceID string) {
@@ -170,6 +195,11 @@ func (h *Hub) pushHistory(conn *websocket.Conn, myDeviceID string) {
 
 // pushDeviceOnline 推送设备上线事件到前端
 func (h *Hub) pushDeviceOnline(deviceID, name, ip string, port int) {
+	// 缓存设备信息（前端重连时重新推送）
+	h.deviceInfosMu.Lock()
+	h.deviceInfos[deviceID] = DeviceInfo{ID: deviceID, Name: name, IP: ip, Port: port}
+	h.deviceInfosMu.Unlock()
+
 	h.localConnMu.Lock()
 	conn := h.localConn
 	h.localConnMu.Unlock()
@@ -199,6 +229,11 @@ func (h *Hub) pushDeviceOnline(deviceID, name, ip string, port int) {
 
 // pushDeviceOffline 推送设备下线事件到前端
 func (h *Hub) pushDeviceOffline(deviceID string) {
+	// 从缓存移除
+	h.deviceInfosMu.Lock()
+	delete(h.deviceInfos, deviceID)
+	h.deviceInfosMu.Unlock()
+
 	h.localConnMu.Lock()
 	conn := h.localConn
 	h.localConnMu.Unlock()
