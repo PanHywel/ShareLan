@@ -14,6 +14,7 @@
   let myDeviceId = $state(getDeviceId());
   let myDeviceName = $state(getDeviceName());
   let localIP = $state('');
+  let allMsgs: Message[] = $state([]);
 
   onMount(() => {
     const port = window.location.port || '17888';
@@ -35,7 +36,7 @@
   function handleMessage(msg: Message) {
     switch (msg.type) {
       case 'text':
-        addMessage(msg);
+        allMsgs = [...allMsgs, msg];
         break;
       case 'server_info':
         try {
@@ -95,12 +96,9 @@
     console.log('[App.sendMessage] 发送: to=' + msg.to.slice(0,8) + ' content=' + content);
     try {
       wsClient.send(msg);
-      console.log('[App.sendMessage] wsClient.send 成功');
     } catch (e) {
-      console.error('[App.sendMessage] wsClient.send 异常:', e);
     }
-    addMessage(msg);
-    console.log('[App.sendMessage] addMessage 完成, msgId=' + msg.id.slice(0,8));
+    allMsgs = [...allMsgs, msg];
   }
 
   function handleDeviceSelect(id: string) {
@@ -116,7 +114,7 @@
   <!-- 聊天区域 -->
   <div class="flex-1 flex flex-col">
     {#if connected}
-      <ChatPanel {sendMessage} />
+      <ChatPanel {sendMessage} allMsgs={allMsgs} />
     {:else}
       <div class="flex-1 flex items-center justify-center text-gray-400">
         <div class="text-center">

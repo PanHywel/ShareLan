@@ -4,7 +4,7 @@
   import MessageList from './MessageList.svelte';
   import MessageInput from './MessageInput.svelte';
 
-  let { sendMessage }: { sendMessage: (content: string) => void } = $props();
+  let { sendMessage, allMsgs = [] }: { sendMessage: (content: string) => void; allMsgs: any[] } = $props();
 
   let currentDevice = $derived.by(() => {
     return $devices.find(d => d.id === $activeDeviceId) ?? null;
@@ -20,7 +20,7 @@
     </div>
     <!-- 消息列表 -->
     <div class="flex-1 overflow-y-auto px-4 py-3">
-      <MessageList {currentDevice} />
+      <MessageList {currentDevice} {allMsgs} />
     </div>
     <!-- 输入区域 -->
     <div class="border-t border-gray-200">

@@ -1,16 +1,23 @@
 <script lang="ts">
-  import { allMessages } from '../stores/messages';
   import { getDeviceId } from '../lib/types';
   import MessageItem from './MessageItem.svelte';
   import type { Device, Message } from '../lib/types';
 
-  let { currentDevice }: { currentDevice: Device } = $props();
+  let { currentDevice, allMsgs = [] }: { currentDevice: Device; allMsgs: Message[] } = $props();
 
   let myDeviceId = getDeviceId();
 
   function conversationId(a: string, b: string): string {
     return a < b ? `${a}:${b}` : `${b}:${a}`;
   }
+
+  let filtered = $derived.by(() => {
+    const convId = conversationId(myDeviceId, currentDevice.id);
+    return allMsgs.filter((m: Message) => {
+      if (m.type !== 'text') return false;
+      return conversationId(m.from, m.to) === convId;
+    });
+  });
 
   let container: HTMLDivElement;
   $effect(() => {
@@ -23,10 +30,8 @@
 </script>
 
 <div bind:this={container} class="h-full overflow-y-auto select-text">
-  {#each $allMessages as msg (msg.id)}
-    {#if msg.type === 'text' && conversationId(msg.from, msg.to) === conversationId(myDeviceId, currentDevice.id)}
-      <MessageItem message={msg} isMine={msg.from === myDeviceId} />
-    {/if}
+  {#each filtered as msg (msg.id)}
+    <MessageItem message={msg} isMine={msg.from === myDeviceId} />
   {:else}
     <div class="flex items-center justify-center h-full text-gray-400 text-sm">
       <div class="text-center">
