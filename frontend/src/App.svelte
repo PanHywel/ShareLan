@@ -93,8 +93,14 @@
     };
 
     console.log('[App.sendMessage] 发送: to=' + msg.to.slice(0,8) + ' content=' + content);
-    wsClient.send(msg);
+    try {
+      wsClient.send(msg);
+      console.log('[App.sendMessage] wsClient.send 成功');
+    } catch (e) {
+      console.error('[App.sendMessage] wsClient.send 异常:', e);
+    }
     addMessage(msg);
+    console.log('[App.sendMessage] addMessage 完成, msgId=' + msg.id.slice(0,8));
   }
 
   function handleDeviceSelect(id: string) {
