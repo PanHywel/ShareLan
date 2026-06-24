@@ -4,6 +4,7 @@
   let { sendMessage }: { sendMessage: (content: string) => void } = $props();
 
   let text = $state('');
+  let textareaEl: HTMLTextAreaElement | undefined = $state();
 
   function handleKeydown(e: KeyboardEvent) {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -12,28 +13,33 @@
     }
   }
 
+  function handleInput(e: Event) {
+    text = (e.target as HTMLTextAreaElement).value;
+  }
+
   function send() {
-    const textarea = document.querySelector('.msg-input') as HTMLTextAreaElement;
-    const raw = textarea ? textarea.value : text;
-    const content = raw.trim();
+    const content = text.trim();
     if (!content || !$activeDeviceId) return;
     sendMessage(content);
-    // 直接操作 DOM 清空，避免 Svelte bind 问题
-    if (textarea) {
-      textarea.value = '';
-      textarea.style.height = 'auto';
-    }
     text = '';
   }
+
+  $effect(() => {
+    // text 变化后同步到 textarea 的 value
+    if (textareaEl) {
+      textareaEl.value = text;
+    }
+  });
 </script>
 
 <div class="flex items-end gap-2 p-3 bg-white">
   <textarea
-    bind:value={text}
+    bind:this={textareaEl}
+    oninput={handleInput}
     onkeydown={handleKeydown}
     placeholder="输入消息... (Enter 发送, Shift+Enter 换行)"
     rows="3"
-    class="msg-input flex-1 resize-none rounded-lg border border-gray-300 px-3 py-2 text-sm
+    class="flex-1 resize-none rounded-lg border border-gray-300 px-3 py-2 text-sm
       focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400
       placeholder:text-gray-400"
   ></textarea>
