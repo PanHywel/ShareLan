@@ -88,9 +88,11 @@ export class WSClient {
 
   send(msg: Message) {
     if (this.ws?.readyState === WebSocket.OPEN) {
-      const data = JSON.stringify(msg);
-      console.log('[WS.send] 发送 type=' + msg.type + ' to=' + (msg.to||'').slice(0,8) + ' readyState=' + this.ws.readyState);
-      this.ws.send(data);
+      try {
+        this.ws.send(JSON.stringify(msg));
+      } catch (e) {
+        console.warn('[WS.send] 发送失败:', e);
+      }
     } else {
       console.warn('[WS.send] WebSocket 未就绪: readyState=' + (this.ws ? this.ws.readyState : 'null'));
     }

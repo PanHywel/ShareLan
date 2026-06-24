@@ -95,7 +95,6 @@
     console.log('[App.sendMessage] 发送: to=' + msg.to.slice(0,8) + ' content=' + content);
     wsClient.send(msg);
     addMessage(msg);
-    console.log('[App.sendMessage] 发送完成');
   }
 
   function handleDeviceSelect(id: string) {
