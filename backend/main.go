@@ -37,9 +37,6 @@ func loadOrGenerateDeviceID() string {
 	return cfg.DeviceID
 }
 
-// logBuffer 全局日志缓冲区（临时调试用）
-var logBuffer *LogBuffer
-
 func main() {
 	log.SetFlags(log.Ltime | log.Lshortfile)
 

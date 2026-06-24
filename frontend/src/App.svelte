@@ -70,6 +70,7 @@
 
   function sendMessage(content: string) {
     const targetId = $activeDeviceId;
+    console.log('[App.sendMessage] targetId=' + targetId + ' wsClient=' + (wsClient ? 'ok' : 'null') + ' myDeviceId=' + myDeviceId);
     if (!targetId || !wsClient) return;
 
     const msg: Message = {
@@ -81,8 +82,10 @@
       timestamp: Date.now(),
     };
 
+    console.log('[App.sendMessage] 发送: to=' + msg.to.slice(0,8) + ' content=' + content);
     wsClient.send(msg);
     addMessage(msg);
+    console.log('[App.sendMessage] 发送完成');
   }
 
   function handleDeviceSelect(id: string) {

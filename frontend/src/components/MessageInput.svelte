@@ -14,7 +14,11 @@
 
   function send() {
     const content = text.trim();
-    if (!content || !$activeDeviceId) return;
+    if (!content || !$activeDeviceId) {
+      console.log('[Send] 阻止发送: content=' + JSON.stringify(content) + ' activeId=' + $activeDeviceId);
+      return;
+    }
+    console.log('[Send] 发送消息: to=' + $activeDeviceId + ' content=' + content);
     sendMessage(content);
     text = '';
   }

@@ -8,6 +8,9 @@ import (
 	"time"
 )
 
+// logBuffer 全局日志缓冲区（在 main 或 test_main 中初始化）
+var logBuffer *LogBuffer
+
 // LogBuffer 环形日志缓冲区，同时写入 stderr 和内存
 type LogBuffer struct {
 	buf    []byte
