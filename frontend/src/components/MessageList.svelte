@@ -21,6 +21,11 @@
   }
 
   let container: HTMLDivElement;
+  // 调试消息数量
+  let totalMsgs = $derived($allMessages.length);
+  let filteredCount = $derived(filteredMessages.length);
+  console.log('[MessageList] total=' + totalMsgs + ' filtered=' + filteredCount + ' myId=' + myDeviceId.slice(0,8) + ' convId=' + conversationId(myDeviceId, currentDevice.id).slice(0,20));
+
   $effect(() => {
     // 新消息到达时滚动到底部
     if (container) {
