@@ -38,7 +38,17 @@
         addMessage(msg);
         break;
       case 'server_info':
-        localIP = msg.content;
+        try {
+          const info = JSON.parse(msg.content);
+          localIP = info.ip || msg.content;
+          if (info.id) {
+            myDeviceId = info.id;
+            localStorage.setItem('sharelan_device_id', info.id);
+          }
+          if (info.name) myDeviceName = info.name;
+        } catch {
+          localIP = msg.content;
+        }
         break;
       case 'device_online':
         handleDeviceOnline(msg);

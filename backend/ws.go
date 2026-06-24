@@ -160,10 +160,16 @@ func (h *Hub) handleLocalConnection(conn *websocket.Conn) {
 // pushServerInfo 推送本机服务信息 + 所有缓存的在线设备到前端
 func (h *Hub) pushServerInfo(conn *websocket.Conn) {
 	localIP := getLocalIP()
+	info := map[string]interface{}{
+		"ip":   localIP,
+		"id":   h.deviceID,
+		"name": h.deviceName,
+	}
+	infoJSON, _ := json.Marshal(info)
 	msg := WSMessage{
 		ID:        newUUID(),
 		Type:      "server_info",
-		Content:   localIP,
+		Content:   string(infoJSON),
 		Timestamp: time.Now().UnixMilli(),
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
