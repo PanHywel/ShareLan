@@ -212,28 +212,30 @@ func (s *MDNSService) startCleanupLoop(timeout time.Duration) {
 // pickLANIP 从多个 IP 中选取最合适的局域网 IP
 // 优先顺序：192.168.x.x > 10.x.x.x > 172.16-31.x.x > 其他私有 IP
 func pickLANIP(ips []net.IP) string {
-	// 先看有没有 192.168.x.x
+	// 优先顺序：192.168.x.x > 10.x.x.x > 172.16-31.x.x > 其他
+	// 注意：必须用 ip4 访问字节，避免 IPv4-mapped IPv6 格式取错
 	for _, ip := range ips {
-		if ip.To4() != nil && ip[0] == 192 && ip[1] == 168 {
+		ip4 := ip.To4()
+		if ip4 != nil && ip4[0] == 192 && ip4[1] == 168 {
 			return ip.String()
 		}
 	}
-	// 再看 10.x.x.x
 	for _, ip := range ips {
-		if ip.To4() != nil && ip[0] == 10 {
+		ip4 := ip.To4()
+		if ip4 != nil && ip4[0] == 10 {
 			return ip.String()
 		}
 	}
-	// 再看 172.16-31.x.x
 	for _, ip := range ips {
-		if ip.To4() != nil && ip[0] == 172 && ip[1] >= 16 && ip[1] <= 31 {
+		ip4 := ip.To4()
+		if ip4 != nil && ip4[0] == 172 && ip4[1] >= 16 && ip4[1] <= 31 {
 			return ip.String()
 		}
 	}
-	// 最后取第一个非回环 IPv4
 	for _, ip := range ips {
-		if ip.To4() != nil && !ip.IsLoopback() {
-			return ip.String()
+		ip4 := ip.To4()
+		if ip4 != nil && !ip.IsLoopback() {
+			return ip4.String()
 		}
 	}
 	return ""
