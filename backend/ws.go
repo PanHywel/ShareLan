@@ -150,7 +150,7 @@ func (h *Hub) handleLocalConnection(conn *websocket.Conn) {
 		log.Printf("收到前端消息: type=%s content=%s", msg.Type, msg.Content)
 		switch msg.Type {
 		case "text":
-			h.handleMessage(&msg)
+			go h.handleMessage(&msg)
 		case "debug_log":
 			log.Printf("[前端控制器台] %s", msg.Content)
 		}
@@ -556,7 +556,7 @@ func (h *Hub) readPeer(deviceID string, conn *websocket.Conn) {
 		case "handshake":
 			h.handleHandshake(deviceID, &msg)
 		case "text":
-			h.handleMessage(&msg)
+			go h.handleMessage(&msg)
 		}
 	}
 }
