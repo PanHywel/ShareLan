@@ -3,32 +3,30 @@
   import { getDeviceId } from '../lib/types';
   import MessageItem from './MessageItem.svelte';
   import type { Device, Message } from '../lib/types';
+  import { onMount, onDestroy } from 'svelte';
 
   let { currentDevice }: { currentDevice: Device } = $props();
 
   let myDeviceId = getDeviceId();
-
-  let filteredMessages = $derived.by(() => {
-    const convId = conversationId(myDeviceId, currentDevice.id);
-    return $allMessages.filter((m: Message) => {
-      if (m.type !== 'text') return false;
-      return conversationId(m.from, m.to) === convId;
-    });
-  });
+  let messages: Message[] = $state([]);
 
   function conversationId(a: string, b: string): string {
     return a < b ? `${a}:${b}` : `${b}:${a}`;
   }
 
-  let container: HTMLDivElement;
-  // 调试消息数量
-  let totalMsgs = $derived($allMessages.length);
-  let filteredCount = $derived(filteredMessages.length);
-  console.log('[MessageList] total=' + totalMsgs + ' filtered=' + filteredCount + ' myId=' + myDeviceId.slice(0,8) + ' convId=' + conversationId(myDeviceId, currentDevice.id).slice(0,20));
+  const unsub = allMessages.subscribe(all => {
+    const convId = conversationId(myDeviceId, currentDevice.id);
+    messages = all.filter((m: Message) => {
+      if (m.type !== 'text') return false;
+      return conversationId(m.from, m.to) === convId;
+    });
+  });
 
+  onDestroy(unsub);
+
+  let container: HTMLDivElement;
   $effect(() => {
-    // 新消息到达时滚动到底部
-    if (container) {
+    if (container && messages.length > 0) {
       requestAnimationFrame(() => {
         container.scrollTop = container.scrollHeight;
       });
@@ -37,7 +35,7 @@
 </script>
 
 <div bind:this={container} class="h-full overflow-y-auto select-text">
-  {#each filteredMessages as msg (msg.id)}
+  {#each messages as msg (msg.id)}
     <MessageItem message={msg} isMine={msg.from === myDeviceId} />
   {:else}
     <div class="flex items-center justify-center h-full text-gray-400 text-sm">
