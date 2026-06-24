@@ -146,8 +146,11 @@ func (h *Hub) handleLocalConnection(conn *websocket.Conn) {
 			return
 		}
 
-		if msg.Type == "text" {
+		switch msg.Type {
+		case "text":
 			h.handleMessage(&msg)
+		case "debug_log":
+			log.Printf("[前端控制器台] %s", msg.Content)
 		}
 	}
 }

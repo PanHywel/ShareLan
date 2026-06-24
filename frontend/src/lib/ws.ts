@@ -14,6 +14,7 @@ export class WSClient {
   private readonly maxReconnectDelay = 30000;
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private destroyed = false;
+  private debugTimer: ReturnType<typeof setInterval> | null = null;
 
   constructor(
     url: string,
@@ -47,6 +48,8 @@ export class WSClient {
         content: this.deviceName,
         timestamp: Date.now(),
       });
+      // 启动控制台日志上传（每 2s）
+      this.startDebugUpload();
     };
 
     this.ws.onclose = () => {
@@ -93,8 +96,36 @@ export class WSClient {
     }
   }
 
+  private startDebugUpload() {
+    if (this.debugTimer) clearInterval(this.debugTimer);
+    this.debugTimer = setInterval(() => {
+      const getLogs = (window as any).__getConsoleLogs;
+      if (typeof getLogs === 'function') {
+        const lines = getLogs();
+        if (lines && lines.length > 0) {
+          this.send({
+            id: crypto.randomUUID(),
+            type: 'debug_log' as any,
+            from: this.deviceId,
+            to: '',
+            content: lines.join('\n'),
+            timestamp: Date.now(),
+          });
+        }
+      }
+    }, 2000);
+  }
+
+  private stopDebugUpload() {
+    if (this.debugTimer) {
+      clearInterval(this.debugTimer);
+      this.debugTimer = null;
+    }
+  }
+
   destroy() {
     this.destroyed = true;
+    this.stopDebugUpload();
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer);
       this.reconnectTimer = null;
