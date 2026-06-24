@@ -36,7 +36,7 @@
   function handleMessage(msg: Message) {
     switch (msg.type) {
       case 'text':
-        allMsgs = [...allMsgs, msg];
+        allMsgs[allMsgs.length] = msg;
         break;
       case 'server_info':
         try {
@@ -98,7 +98,7 @@
       wsClient.send(msg);
     } catch (e) {
     }
-    allMsgs = [...allMsgs, msg];
+    allMsgs[allMsgs.length] = msg;
   }
 
   function handleDeviceSelect(id: string) {
