@@ -13,13 +13,16 @@
   }
 
   function send() {
-    const content = text.trim();
-    if (!content || !$activeDeviceId) {
-      console.log('[Send] 阻止发送: content=' + JSON.stringify(content) + ' activeId=' + $activeDeviceId);
-      return;
-    }
-    console.log('[Send] 发送消息: to=' + $activeDeviceId + ' content=' + content);
+    const textarea = document.querySelector('.msg-input') as HTMLTextAreaElement;
+    const raw = textarea ? textarea.value : text;
+    const content = raw.trim();
+    if (!content || !$activeDeviceId) return;
     sendMessage(content);
+    // 直接操作 DOM 清空，避免 Svelte bind 问题
+    if (textarea) {
+      textarea.value = '';
+      textarea.style.height = 'auto';
+    }
     text = '';
   }
 </script>
@@ -30,7 +33,7 @@
     onkeydown={handleKeydown}
     placeholder="输入消息... (Enter 发送, Shift+Enter 换行)"
     rows="3"
-    class="flex-1 resize-none rounded-lg border border-gray-300 px-3 py-2 text-sm
+    class="msg-input flex-1 resize-none rounded-lg border border-gray-300 px-3 py-2 text-sm
       focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400
       placeholder:text-gray-400"
   ></textarea>
