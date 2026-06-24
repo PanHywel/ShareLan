@@ -431,28 +431,20 @@ func (h *Hub) startHandshake(deviceID string, conn *websocket.Conn, initiator bo
 		return
 	}
 
-	// 主动发起方：等对端响应后比较 device_id
-	if initiator {
-		time.Sleep(500 * time.Millisecond)
+			// 发起方等待 handshake 确认后标记 ready（不做 device_id 比较关连接）
+		if initiator {
+			time.Sleep(500 * time.Millisecond)
 
-		pc.mu.Lock()
-		if pc.state == stateHandshaking {
-			if h.deviceID > deviceID {
-				log.Printf("device_id %s > %s，关闭主动连接", h.deviceID, deviceID)
-				pc.state = stateConnecting
+			pc.mu.Lock()
+			if pc.state == stateHandshaking {
+				pc.state = stateReady
 				pc.mu.Unlock()
-				conn.Close(websocket.StatusNormalClosure, "device_id 更大，让连接留给对端")
-				h.removePeer(deviceID)
-				return
+				log.Printf("与 %s 的 WebSocket 连接已就绪 (主动发起)", deviceID)
+			} else {
+				pc.mu.Unlock()
 			}
-			pc.state = stateReady
-			pc.mu.Unlock()
-			log.Printf("与 %s 的 WebSocket 连接已就绪 (主动发起)", deviceID)
-		} else {
-			pc.mu.Unlock()
 		}
 	}
-}
 
 // handleHandshake 处理收到的 handshake（接收方）
 // 接收方永远不关闭连接，关闭决定仅由发起方在 startHandshake 中做出
